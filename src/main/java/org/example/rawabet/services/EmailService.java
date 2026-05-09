@@ -195,7 +195,7 @@ public class EmailService {
 
         mailSender.send(message);
     }
-}
+
     public void sendWarningEmail(String toEmail, String userName, String commentaire) {
         try {
             log.info("Tentative envoi mail vers {}", toEmail);

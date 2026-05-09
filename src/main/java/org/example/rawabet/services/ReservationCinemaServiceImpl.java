@@ -74,10 +74,12 @@ public class ReservationCinemaServiceImpl implements IReservationCinemaService {
             throw new RuntimeException("Salle not found for seance");
         }
 
-        Seat seat = seatRepository.findBySeatNumberAndRowSalleIdAndIsActiveTrue(
-                        request.getSeatNumero(),
-                        seance.getSalleCinema().getId()
-                )
+        // FIX: findBySeatNumberAndRowSalleIdAndIsActiveTrue peut retourner plusieurs résultats
+        // On prend le premier seat actif qui correspond au numéro dans cette salle
+        Seat seat = seatRepository.findByRowSalleIdAndIsActiveTrue(seance.getSalleCinema().getId())
+                .stream()
+                .filter(s -> s.getSeatNumber().equals(request.getSeatNumero()))
+                .findFirst()
                 .orElseThrow(() -> new RuntimeException("Seat not found for numero: " + request.getSeatNumero()));
 
         boolean alreadyReserved = reservationRepository

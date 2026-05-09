@@ -3,6 +3,8 @@ package org.example.rawabet.services;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.example.rawabet.config.SchemaGuard;
 import org.example.rawabet.dto.SubscribeResponse;
 import org.example.rawabet.dto.SubscriptionDto;
 import org.example.rawabet.dto.TimelineResponse;
@@ -30,6 +32,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class AbonnementServiceImpl {
 
@@ -40,6 +43,7 @@ public class AbonnementServiceImpl {
     private final UserRepository userRepository;
     private final ICarteFideliteService carteFideliteService;
     private final QRCodeRepository qrCodeRepository;
+    private final SchemaGuard schemaGuard;
 
     // ==================== Initialization ====================
 
@@ -139,7 +143,7 @@ public class AbonnementServiceImpl {
 
         // Award fidelity points only for immediately activated subscriptions
         if (status == SubscriptionStatus.ACTIVE) {
-            carteFideliteService.getCarteByUser(user);
+            carteFideliteService.getOrCreateCarte(user);
             int fidelityPoints = getSubscriptionFidelityPoints(abonnement.getType());
             if (fidelityPoints > 0) {
                 carteFideliteService.addPoints(user, fidelityPoints, ActionType.BONUS);
@@ -213,6 +217,11 @@ public class AbonnementServiceImpl {
     @Scheduled(cron = "0 0 * * * *")
     @Transactional
     public void refreshAllSubscriptionStatuses() {
+        if (!schemaGuard.tableExists("user_abonnement")) {
+            log.warn("Skipping subscription refresh job because table user_abonnement does not exist yet.");
+            return;
+        }
+
         List<UserAbonnement> allSubscriptions = userAbonnementRepository.findAll();
         for (UserAbonnement subscription : allSubscriptions) {
             SubscriptionStatus newStatus = computeStatus(subscription);
@@ -364,7 +373,7 @@ public class AbonnementServiceImpl {
         UserAbonnement activeSubscription = subscriptions.stream()
                 .filter(ua -> ua.getStatus() == SubscriptionStatus.ACTIVE
                         || (ua.getDateDebut().isBefore(today) || ua.getDateDebut().isEqual(today))
-                           && (ua.getDateFin().isAfter(today) || ua.getDateFin().isEqual(today)))
+                        && (ua.getDateFin().isAfter(today) || ua.getDateFin().isEqual(today)))
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("No active subscription found for this user"));
 
@@ -398,7 +407,7 @@ public class AbonnementServiceImpl {
         UserAbonnement activeSubscription = subscriptions.stream()
                 .filter(ua -> ua.getStatus() == SubscriptionStatus.ACTIVE
                         || (ua.getDateDebut().isBefore(today) || ua.getDateDebut().isEqual(today))
-                           && (ua.getDateFin().isAfter(today) || ua.getDateFin().isEqual(today)))
+                        && (ua.getDateFin().isAfter(today) || ua.getDateFin().isEqual(today)))
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Subscription not found for this user"));
 
@@ -473,3 +482,4 @@ public class AbonnementServiceImpl {
                 .build();
     }
 }
+

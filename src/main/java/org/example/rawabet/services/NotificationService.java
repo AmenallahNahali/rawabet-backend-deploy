@@ -11,12 +11,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,15 +31,18 @@ public class NotificationService {
     private final UserRepository userRepository;
     private final JavaMailSender mailSender;
     private final String mailFrom;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public NotificationService(NotificationRepository notificationRepository,
                                UserRepository userRepository,
                                JavaMailSender mailSender,
-                               @Value("${spring.mail.username:}") String mailFrom) {
+                               @Value("${spring.mail.username:}") String mailFrom,
+                               SimpMessagingTemplate messagingTemplate) {
         this.notificationRepository = notificationRepository;
         this.userRepository = userRepository;
         this.mailSender = mailSender;
         this.mailFrom = mailFrom;
+        this.messagingTemplate = messagingTemplate;
     }
 
     public List<Notification> getAllNotifications() {
@@ -102,7 +108,9 @@ public class NotificationService {
 
     public Notification createNotifPush(User user, String message) {
         Notification notification = buildNotification(user, message, NotificationType.PUSH);
-        return notificationRepository.save(notification);
+        Notification saved = notificationRepository.save(notification);
+        messagingTemplate.convertAndSend("/topic/notifications/" + user.getId(), toPayload(saved));
+        return saved;
     }
 
     public Notification createNotifEmail(User user, String message) {
@@ -115,6 +123,7 @@ public class NotificationService {
             logger.error("Echec d'envoi de l'email pour l'utilisateur {}: {}", user.getId(), e.getMessage());
         }
 
+        messagingTemplate.convertAndSend("/topic/notifications/" + user.getId(), toPayload(savedNotification));
         return savedNotification;
     }
 
@@ -126,6 +135,7 @@ public class NotificationService {
         }
 
         users.forEach(user -> createNotifEmail(user, message));
+        messagingTemplate.convertAndSend("/topic/notifications/broadcast", broadcastPayload(message, NotificationType.EMAIL));
     }
 
     @Transactional
@@ -136,6 +146,7 @@ public class NotificationService {
         }
 
         subscribers.forEach(user -> createNotifEmail(user, message));
+        messagingTemplate.convertAndSend("/topic/notifications/broadcast", broadcastPayload(message, NotificationType.EMAIL));
     }
 
     @Transactional
@@ -146,6 +157,7 @@ public class NotificationService {
         }
 
         users.forEach(user -> createNotifPush(user, message));
+        messagingTemplate.convertAndSend("/topic/notifications/broadcast", broadcastPayload(message, NotificationType.PUSH));
     }
 
     @Transactional
@@ -156,6 +168,7 @@ public class NotificationService {
         }
 
         subscribers.forEach(user -> createNotifPush(user, message));
+        messagingTemplate.convertAndSend("/topic/notifications/broadcast", broadcastPayload(message, NotificationType.PUSH));
     }
 
     public void sendEmail(String email, String message) {
@@ -181,6 +194,26 @@ public class NotificationService {
                             .anyMatch(sub -> sub.getDateFin() != null
                                 && !sub.getDateFin().isBefore(today)))
                 .collect(Collectors.toList());
+    }
+
+    private Map<String, Object> toPayload(Notification n) {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("id", n.getId());
+        payload.put("message", n.getMessage());
+        payload.put("dateEnvoi", n.getDateEnvoi());
+        payload.put("type", n.getType());
+        payload.put("lue", n.isLue());
+        return payload;
+    }
+
+    private Map<String, Object> broadcastPayload(String message, NotificationType type) {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("id", null);
+        payload.put("message", message);
+        payload.put("dateEnvoi", LocalDateTime.now());
+        payload.put("type", type);
+        payload.put("lue", false);
+        return payload;
     }
 
     private Notification buildNotification(User user, String message, NotificationType type) {

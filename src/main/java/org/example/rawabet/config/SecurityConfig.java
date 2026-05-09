@@ -27,8 +27,8 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of(
-            "http://localhost:4200",
-            "http://172.20.10.2:4200"
+                "http://localhost:4200",
+                "http://172.20.10.2:4200"
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
@@ -61,14 +61,11 @@ public class SecurityConfig {
 
                         .requestMatchers("/ml/**").authenticated()
 
-                        // Alerte tentative suspecte — public (appelé avant auth réussie)
                         .requestMatchers("/auth/suspect-alert").permitAll()
                         .requestMatchers("/auth/face/login").permitAll()
                         .requestMatchers("/auth/face/register").permitAll()
 
                         // ── WEBAUTHN / PASSKEY — public ────────────────────────────
-                        // authentication/start et finish : appelés AVANT connexion → public
-                        // registration/start et finish : nécessitent d'être connecté → authenticated
                         .requestMatchers("/auth/webauthn/authentication/start").permitAll()
                         .requestMatchers("/auth/webauthn/authentication/finish").permitAll()
                         .requestMatchers("/auth/webauthn/registration/start").authenticated()
@@ -81,8 +78,7 @@ public class SecurityConfig {
                         // WebSocket
                         .requestMatchers("/ws/**").permitAll()
 
-                        // ── IMPERSONATION — authentifié + rôle admin ───────────────
-                        // La vérification du rôle est faite par @PreAuthorize dans le controller
+                        // ── IMPERSONATION ──────────────────────────────────────────
                         .requestMatchers("/auth/impersonate").authenticated()
 
                         // ── CHAT ──────────────────────────────────────────────────
@@ -111,7 +107,6 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/notifications/**").hasAnyAuthority("SUPER_ADMIN", "CLIENT")
                         .requestMatchers(HttpMethod.PUT, "/api/notifications/**").hasAnyAuthority("SUPER_ADMIN", "CLIENT")
                         .requestMatchers(HttpMethod.DELETE, "/api/notifications/**").hasAnyAuthority("SUPER_ADMIN", "CLIENT")
-
 
                         // ── CINEMA / EVENT ────────────────────────────────────────
                         .requestMatchers("/cinema/**").hasAuthority("CINEMA_CREATE")
@@ -142,16 +137,35 @@ public class SecurityConfig {
                         .requestMatchers("/carte/admin/**").hasAuthority("FIDELITY_UPDATE")
 
                         // 🎬 CINEMA - routes publiques
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/cinemas").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/cinemas/**").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/films").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/films/**").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/films").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/films/**").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/seances").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/seances/**").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/salles-cinema/**").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/seats/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/cinemas").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/cinemas/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/cinemas").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/cinemas/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/films").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/films/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/films").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/films/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/seances").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/seances/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/salles-cinema/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/seats/**").permitAll()
+
+                        // 🎪 EVENEMENTS - routes publiques
+                        .requestMatchers(HttpMethod.GET, "/evenements").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/evenements/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/evenements").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/evenements/**").permitAll()
+
+                        // 📦 MATERIELS - routes publiques
+                        .requestMatchers(HttpMethod.GET, "/materiels").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/materiels/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/materiels").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/materiels/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/categories-materiel").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/categories-materiel/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/categories-materiel").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/categories-materiel/**").permitAll()
+
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
@@ -159,6 +173,3 @@ public class SecurityConfig {
         return http.build();
     }
 }
-
-
-

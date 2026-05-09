@@ -18,6 +18,7 @@ import org.example.rawabet.security.JwtService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -37,7 +38,8 @@ public class CarteFideliteServiceImpl implements ICarteFideliteService {
     private final IAuthService              authService;
     private final UserRepository            userRepository;
     private final JwtService                jwtService;
-    private final MessageSource              messageSource;
+    private final MessageSource             messageSource;
+    private final SimpMessagingTemplate     messagingTemplate;
 
     // ── Get my carte ───────────────────────────────────────────────────────
     @Override
@@ -53,6 +55,22 @@ public class CarteFideliteServiceImpl implements ICarteFideliteService {
     public CarteFideliteResponse getCarteByUser(User user) {
         CarteFidelite carte = carteRepository.findByUser(user)
             .orElseThrow(() -> new RuntimeException(messageSource.getMessage("fidelity.carte.notfound", null, Locale.ENGLISH)));
+        return mapToResponse(carte);
+    }
+
+    @Override
+    @Transactional
+    public CarteFideliteResponse getOrCreateCarte(User user) {
+        CarteFidelite carte = carteRepository.findByUser(user).orElseGet(() -> {
+            CarteFidelite newCarte = CarteFidelite.builder()
+                    .user(user)
+                    .points(0)
+                    .level(Level.SILVER)
+                    .dateExpiration(LocalDate.now().plusYears(1))
+                    .build();
+            return carteRepository.save(newCarte);
+        });
+        handleExpiration(carte);
         return mapToResponse(carte);
     }
 
@@ -97,6 +115,7 @@ public class CarteFideliteServiceImpl implements ICarteFideliteService {
         carte.setLevel(calculateLevel(newPoints));
         carteRepository.save(carte);
         saveHistory(user, action, points);
+        messagingTemplate.convertAndSend("/topic/loyalty/" + userId, mapToResponse(carte));
     }
 
     // ── Get my history (paginé) ────────────────────────────────────────────

@@ -17,6 +17,9 @@ public interface ICarteFideliteService {
     // 🔐 ADMIN — voir carte d'un user
     CarteFideliteResponse getCarteByUser(User user);
 
+    // 🔥 SYSTÈME — obtenir ou créer la carte si elle n'existe pas encore
+    CarteFideliteResponse getOrCreateCarte(User user);
+
     // 🔥 SYSTÈME — ajouter points automatiquement
     void addPoints(User user, int points, ActionType action);
 
