@@ -26,18 +26,34 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
+
         config.setAllowedOrigins(List.of(
                 "http://localhost:4200",
                 "http://172.20.10.2:4200"
         ));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
+
+        config.setAllowedMethods(List.of(
+                "GET",
+                "POST",
+                "PUT",
+                "DELETE",
+                "PATCH",
+                "OPTIONS"
+        ));
+
+        config.setAllowedHeaders(List.of(
+                "Authorization",
+                "Content-Type",
+                "Accept"
+        ));
+
         config.setExposedHeaders(List.of("Authorization"));
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
+
         return source;
     }
 
@@ -51,7 +67,14 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
 
-                        // ── PUBLIC ────────────────────────────────────────────────
+                        // ── SWAGGER / OPENAPI — PUBLIC ────────────────────────────
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**"
+                        ).permitAll()
+
+                        // ── AUTH — PUBLIC ─────────────────────────────────────────
                         .requestMatchers("/auth/login").permitAll()
                         .requestMatchers("/auth/logout").permitAll()
                         .requestMatchers("/auth/forgot-password").permitAll()
@@ -59,26 +82,28 @@ public class SecurityConfig {
                         .requestMatchers("/auth/verify-email").permitAll()
                         .requestMatchers("/auth/test").permitAll()
 
-                        .requestMatchers("/ml/**").authenticated()
-
                         .requestMatchers("/auth/suspect-alert").permitAll()
                         .requestMatchers("/auth/face/login").permitAll()
                         .requestMatchers("/auth/face/register").permitAll()
 
-                        // ── WEBAUTHN / PASSKEY — public ────────────────────────────
+                        // ── ML ────────────────────────────────────────────────────
+                        .requestMatchers("/ml/**").authenticated()
+
+                        // ── WEBAUTHN / PASSKEY ────────────────────────────────────
                         .requestMatchers("/auth/webauthn/authentication/start").permitAll()
                         .requestMatchers("/auth/webauthn/authentication/finish").permitAll()
                         .requestMatchers("/auth/webauthn/registration/start").authenticated()
                         .requestMatchers("/auth/webauthn/registration/finish").authenticated()
 
+                        // ── PUBLIC USERS / ERROR / UPLOADS ────────────────────────
                         .requestMatchers("/users/add").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
 
-                        // WebSocket
+                        // ── WEBSOCKET ─────────────────────────────────────────────
                         .requestMatchers("/ws/**").permitAll()
 
-                        // ── IMPERSONATION ──────────────────────────────────────────
+                        // ── IMPERSONATION ─────────────────────────────────────────
                         .requestMatchers("/auth/impersonate").authenticated()
 
                         // ── CHAT ──────────────────────────────────────────────────
@@ -87,8 +112,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/chat/active/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/chat/session/seance/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/chat/session/**").hasAuthority("CINEMA_CREATE")
-                        .requestMatchers(HttpMethod.PUT,  "/chat/session/**").hasAuthority("CINEMA_CREATE")
-                        .requestMatchers(HttpMethod.GET,  "/chat/sessions").hasAuthority("CINEMA_CREATE")
+                        .requestMatchers(HttpMethod.PUT, "/chat/session/**").hasAuthority("CINEMA_CREATE")
+                        .requestMatchers(HttpMethod.GET, "/chat/sessions").hasAuthority("CINEMA_CREATE")
 
                         // ── USERS ─────────────────────────────────────────────────
                         .requestMatchers("/users/me").authenticated()
@@ -102,70 +127,76 @@ public class SecurityConfig {
                         .requestMatchers("/users/*/roles").hasAuthority("ADMIN_MANAGE")
                         .requestMatchers("/users/*/ban").hasAuthority("ADMIN_MANAGE")
                         .requestMatchers("/users/*/unban").hasAuthority("ADMIN_MANAGE")
+
+                        // ── ABONNEMENTS / NOTIFICATIONS ───────────────────────────
                         .requestMatchers("/api/abonnements/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/notifications/**").hasAnyAuthority("SUPER_ADMIN", "CLIENT")
                         .requestMatchers(HttpMethod.POST, "/api/notifications/**").hasAnyAuthority("SUPER_ADMIN", "CLIENT")
                         .requestMatchers(HttpMethod.PUT, "/api/notifications/**").hasAnyAuthority("SUPER_ADMIN", "CLIENT")
                         .requestMatchers(HttpMethod.DELETE, "/api/notifications/**").hasAnyAuthority("SUPER_ADMIN", "CLIENT")
 
-                        // ── CINEMA / EVENT ────────────────────────────────────────
+                        // ── CINEMA / EVENT ADMIN ──────────────────────────────────
                         .requestMatchers("/cinema/**").hasAuthority("CINEMA_CREATE")
                         .requestMatchers("/event/**").hasAuthority("EVENT_CREATE")
 
-                        // ── CLUB — public ─────────────────────────────────────────
+                        // ── CLUB — PUBLIC ─────────────────────────────────────────
                         .requestMatchers(HttpMethod.GET, "/club").permitAll()
                         .requestMatchers(HttpMethod.GET, "/club/events").permitAll()
                         .requestMatchers(HttpMethod.GET, "/club/events/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/club/members").permitAll()
 
-                        // ── CLUB — membres authentifiés ───────────────────────────
-                        .requestMatchers(HttpMethod.GET,    "/club/members/me").authenticated()
-                        .requestMatchers(HttpMethod.POST,   "/club/members/leave").authenticated()
-                        .requestMatchers(HttpMethod.POST,   "/club/requests").authenticated()
-                        .requestMatchers(HttpMethod.POST,   "/club/reservations").authenticated()
+                        // ── CLUB — AUTHENTICATED MEMBERS ──────────────────────────
+                        .requestMatchers(HttpMethod.GET, "/club/members/me").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/club/members/leave").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/club/requests").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/club/reservations").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/club/reservations/**").authenticated()
-                        .requestMatchers(HttpMethod.GET,    "/club/reservations/my").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/club/reservations/my").authenticated()
 
-                        // ── CLUB — admin ──────────────────────────────────────────
+                        // ── CLUB — ADMIN ──────────────────────────────────────────
                         .requestMatchers(HttpMethod.PUT, "/club").hasAuthority("CLUB_MANAGE")
                         .requestMatchers(HttpMethod.GET, "/club/requests/pending").hasAuthority("CLUB_MANAGE")
                         .requestMatchers(HttpMethod.PUT, "/club/requests/**").hasAuthority("CLUB_MANAGE")
                         .requestMatchers(HttpMethod.POST, "/club/events").hasAuthority("CLUB_CREATE")
 
-                        // ── FIDÉLITÉ ──────────────────────────────────────────────
+                        // ── FIDELITY ──────────────────────────────────────────────
                         .requestMatchers("/carte/me").hasAuthority("FIDELITY_READ")
                         .requestMatchers("/carte/admin/**").hasAuthority("FIDELITY_UPDATE")
 
-                        // 🎬 CINEMA - routes publiques
+                        // ── CINEMA — PUBLIC ROUTES ────────────────────────────────
                         .requestMatchers(HttpMethod.GET, "/cinemas").permitAll()
                         .requestMatchers(HttpMethod.GET, "/cinemas/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/cinemas").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/cinemas/**").permitAll()
+
                         .requestMatchers(HttpMethod.GET, "/films").permitAll()
                         .requestMatchers(HttpMethod.GET, "/films/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/films").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/films/**").permitAll()
+
                         .requestMatchers(HttpMethod.GET, "/seances").permitAll()
                         .requestMatchers(HttpMethod.GET, "/seances/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/salles-cinema/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/seats/**").permitAll()
 
-                        // 🎪 EVENEMENTS - routes publiques
+                        // ── EVENTS — PUBLIC ROUTES ────────────────────────────────
                         .requestMatchers(HttpMethod.GET, "/evenements").permitAll()
                         .requestMatchers(HttpMethod.GET, "/evenements/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/evenements").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/evenements/**").permitAll()
 
-                        // 📦 MATERIELS - routes publiques
+                        // ── MATERIALS — PUBLIC ROUTES ─────────────────────────────
                         .requestMatchers(HttpMethod.GET, "/materiels").permitAll()
                         .requestMatchers(HttpMethod.GET, "/materiels/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/materiels").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/materiels/**").permitAll()
+
                         .requestMatchers(HttpMethod.GET, "/api/categories-materiel").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/categories-materiel/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/categories-materiel").permitAll()
                         .requestMatchers(HttpMethod.GET, "/categories-materiel/**").permitAll()
 
+                        // ── EVERYTHING ELSE ───────────────────────────────────────
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
