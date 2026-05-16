@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"mysql-service","namespace":"default"},"spec":{"ports":[{"port":3306,"targetPort":3306}],"selector":{"app":"mysql"},"type":"ClusterIP"}}
+  creationTimestamp: "2026-05-15T17:13:27Z"
+  name: mysql-service
+  namespace: default
+  resourceVersion: "58615"
+  uid: b0a09252-6e3e-41a0-8f46-69fd01ccdc4a
+spec:
+  clusterIP: 10.102.211.28
+  clusterIPs:
+  - 10.102.211.28
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - port: 3306
+    protocol: TCP
+    targetPort: 3306
+  selector:
+    app: mysql
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}

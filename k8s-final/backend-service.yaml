@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"backend-service","namespace":"default"},"spec":{"ports":[{"port":8081,"targetPort":8081}],"selector":{"app":"backend-rawabet"},"type":"ClusterIP"}}
+  creationTimestamp: "2026-05-16T11:37:31Z"
+  name: backend-service
+  namespace: default
+  resourceVersion: "76146"
+  uid: 4ee1e7b7-b6e0-459f-b3cd-6b44ebd26854
+spec:
+  clusterIP: 10.105.22.246
+  clusterIPs:
+  - 10.105.22.246
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - port: 8081
+    protocol: TCP
+    targetPort: 8081
+  selector:
+    app: backend-rawabet
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}

@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"networking.k8s.io/v1","kind":"NetworkPolicy","metadata":{"annotations":{},"name":"allow-frontend-to-backend","namespace":"default"},"spec":{"ingress":[{"from":[{"podSelector":{"matchLabels":{"app":"frontend-rawabet"}}}],"ports":[{"port":8081,"protocol":"TCP"}]}],"podSelector":{"matchLabels":{"app":"backend-rawabet"}},"policyTypes":["Ingress"]}}
+  creationTimestamp: "2026-05-16T15:46:23Z"
+  generation: 1
+  name: allow-frontend-to-backend
+  namespace: default
+  resourceVersion: "89487"
+  uid: 4a650a44-2a1a-4371-a77e-4f7b5f04513a
+spec:
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: frontend-rawabet
+    ports:
+    - port: 8081
+      protocol: TCP
+  podSelector:
+    matchLabels:
+      app: backend-rawabet
+  policyTypes:
+  - Ingress

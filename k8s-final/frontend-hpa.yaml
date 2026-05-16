@@ -1,0 +1,49 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  creationTimestamp: "2026-05-16T15:36:33Z"
+  name: frontend-rawabet
+  namespace: default
+  resourceVersion: "95721"
+  uid: 5716dd14-49e4-499f-ab93-2b8d9f8f608f
+spec:
+  maxReplicas: 4
+  metrics:
+  - resource:
+      name: cpu
+      target:
+        averageUtilization: 70
+        type: Utilization
+    type: Resource
+  minReplicas: 2
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: frontend-rawabet
+status:
+  conditions:
+  - lastTransitionTime: "2026-05-16T15:36:48Z"
+    message: recommended size matches current size
+    reason: ReadyForNewScale
+    status: "True"
+    type: AbleToScale
+  - lastTransitionTime: "2026-05-16T17:16:16Z"
+    message: the HPA was able to successfully calculate a replica count from cpu resource
+      utilization (percentage of request)
+    reason: ValidMetricFound
+    status: "True"
+    type: ScalingActive
+  - lastTransitionTime: "2026-05-16T17:20:17Z"
+    message: the desired replica count is less than the minimum replica count
+    reason: TooFewReplicas
+    status: "True"
+    type: ScalingLimited
+  currentMetrics:
+  - resource:
+      current:
+        averageUtilization: 1
+        averageValue: 1m
+      name: cpu
+    type: Resource
+  currentReplicas: 2
+  desiredReplicas: 2

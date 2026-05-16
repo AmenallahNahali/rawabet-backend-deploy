@@ -1,0 +1,54 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"batch/v1","kind":"CronJob","metadata":{"annotations":{},"name":"mysql-backup-cronjob","namespace":"default"},"spec":{"failedJobsHistoryLimit":3,"jobTemplate":{"spec":{"template":{"metadata":{"labels":{"job-access":"mysql-backup"}},"spec":{"containers":[{"command":["/bin/sh","-c","mysqldump -h mysql-service -u root -ppassword rawabet \u003e /backup/rawabet-backup-$(date +%F-%H-%M).sql\necho \"Backup terminé\"\nls -lh /backup\n"],"image":"mysql:8.0","name":"mysql-backup","volumeMounts":[{"mountPath":"/backup","name":"backup-storage"}]}],"restartPolicy":"OnFailure","volumes":[{"name":"backup-storage","persistentVolumeClaim":{"claimName":"mysql-backup-pvc"}}]}}}},"schedule":"0 2 * * *","successfulJobsHistoryLimit":3}}
+  creationTimestamp: "2026-05-16T15:41:18Z"
+  generation: 2
+  name: mysql-backup-cronjob
+  namespace: default
+  resourceVersion: "89788"
+  uid: 38a6c67d-869a-442e-be36-9da612bdae10
+spec:
+  concurrencyPolicy: Allow
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    metadata: {}
+    spec:
+      template:
+        metadata:
+          labels:
+            job-access: mysql-backup
+        spec:
+          containers:
+          - command:
+            - /bin/sh
+            - -c
+            - |
+              mysqldump -h mysql-service -u root -ppassword rawabet > /backup/rawabet-backup-$(date +%F-%H-%M).sql
+              echo "Backup terminé"
+              ls -lh /backup
+            image: mysql:8.0
+            imagePullPolicy: IfNotPresent
+            name: mysql-backup
+            resources: {}
+            terminationMessagePath: /dev/termination-log
+            terminationMessagePolicy: File
+            volumeMounts:
+            - mountPath: /backup
+              name: backup-storage
+          dnsPolicy: ClusterFirst
+          restartPolicy: OnFailure
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+          volumes:
+          - name: backup-storage
+            persistentVolumeClaim:
+              claimName: mysql-backup-pvc
+  schedule: 0 2 * * *
+  successfulJobsHistoryLimit: 3
+  suspend: false
+status:
+  lastSuccessfulTime: "2026-05-16T15:50:44Z"
