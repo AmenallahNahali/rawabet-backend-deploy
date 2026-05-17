@@ -29,7 +29,9 @@ public class SecurityConfig {
 
         config.setAllowedOrigins(List.of(
                 "http://localhost:4200",
-                "http://172.20.10.2:4200"
+                "http://172.20.10.2:4200",
+                "http://rawabet.domaine.com",
+                "https://handsfree-pavestone-ebony.ngrok-free.dev"
         ));
 
         config.setAllowedMethods(List.of(
